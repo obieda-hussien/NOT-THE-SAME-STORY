@@ -243,7 +243,7 @@ func _inspect() -> void:
 		"camera_frame","roof_marks": portrait = "mariam"
 		"power_log","clock_note","glass": portrait = "fared"
 		"shop_receipt": portrait = "nabil"
-	_show_message("loc."+location,"\n\n".join(lines),portrait)
+	_show_message("loc."+location,"\n\n".join(lines),portrait,clue_id)
 
 func _make_button(label: String, callback: Callable, accent: bool = false) -> Button:
 	var b := Button.new()
@@ -421,7 +421,7 @@ func _refresh_hud() -> void:
 func _show_toast(message: String) -> void:
 	toast.text = message
 
-func _show_message(title: String, message: String, portrait_id: String = "") -> void:
+func _show_message(title: String, message: String, portrait_id: String = "", evidence_id: String = "") -> void:
 	current_screen = "message"
 	hud.visible = false
 	var content := _panel(Loc.t(title),900,540)
@@ -437,6 +437,14 @@ func _show_message(title: String, message: String, portrait_id: String = "") -> 
 		image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		image.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 		row.add_child(image)
+	if evidence_id in ["camera_frame","clock_note","power_log","roof_marks"]:
+		var evidence_picture := TextureRect.new()
+		evidence_picture.texture = load("res://assets/evidence/"+evidence_id+".svg")
+		evidence_picture.custom_minimum_size = Vector2(156,116)
+		evidence_picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		evidence_picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		evidence_picture.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		row.add_child(evidence_picture)
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
