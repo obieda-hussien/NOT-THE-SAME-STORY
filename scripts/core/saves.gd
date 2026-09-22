@@ -10,7 +10,9 @@ func save_game() -> bool:
 	if not Case.started:
 		return false
 	var state: Dictionary = Case.export_state()
-	var envelope := {"payload":state, "checksum":JSON.stringify(state).sha256_text()}
+	# Hash the exact serialized bytes; JSON.parse_string can normalize ints to floats.
+	var serialized := JSON.stringify(state)
+	var envelope := {"payload_json":serialized, "checksum":serialized.sha256_text()}
 	var tmp := FileAccess.open(TEMP, FileAccess.WRITE)
 	if tmp == null:
 		return false
@@ -46,8 +48,10 @@ func _read_verified(path: String) -> Variant:
 	if f == null:
 		return null
 	var value: Variant = JSON.parse_string(f.get_as_text())
-	if not (value is Dictionary) or not (value.get("payload") is Dictionary):
+	if not (value is Dictionary) or not (value.get("payload_json") is String):
 		return null
-	if value.get("checksum", "") != JSON.stringify(value["payload"]).sha256_text():
+	var raw: String = value["payload_json"]
+	if value.get("checksum", "") != raw.sha256_text():
 		return null
-	return value["payload"]
+	var restored: Variant = JSON.parse_string(raw)
+	return restored if restored is Dictionary else null
