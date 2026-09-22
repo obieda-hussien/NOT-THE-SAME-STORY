@@ -34,11 +34,11 @@ jobs:
           chmod +x "$GODOT_BIN"
           "$GODOT_BIN" --version
       - name: Import project and validate script parsing
-        run: "$GODOT_BIN" --headless --path . --editor --quit
+        run: '"$GODOT_BIN" --headless --path . --editor --quit'
       - name: Execute deterministic core tests
-        run: "$GODOT_BIN" --headless --path . --script tests/core_tests.gd
+        run: '"$GODOT_BIN" --headless --path . --script tests/core_tests.gd'
       - name: Smoke-test startup without a display
-        run: "$GODOT_BIN" --headless --path . --quit-after 20
+        run: '"$GODOT_BIN" --headless --path . --quit-after 20'
 
   android:
     name: Export installable Android debug APK
