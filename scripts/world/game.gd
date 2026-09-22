@@ -1,6 +1,8 @@
 extends Node3D
 # Godot 4.7.2, Compatibility renderer. Procedural low-poly diorama is original temp art.
-const WALK_SPEED := 5.2
+const WALK_SPEED := 4.3
+const LOOK_SENSITIVITY := 0.0038
+const GRAVITY := 21.0
 const INTERACTION_RADIUS := 2.2
 const BG := Color("111729")
 const PANEL := Color("1c2639")
@@ -9,12 +11,18 @@ const WHITE := Color("f4eddb")
 const GOLD := Color("ffd080")
 const PURPLE := Color("8e8de5")
 var camera: Camera3D
+var world_root: Node3D
+var camera_mode := 0 # 0 first-person, 1 shoulder, 2 fixed surveillance
+var yaw := 0.0
+var pitch := 0.0
 var actor: CharacterBody3D
 var actor_model: Node3D
 var objects: Dictionary = {}
 var clue_objects: Dictionary = {}
 var keys: Vector2 = Vector2.ZERO
 var touch: Vector2 = Vector2.ZERO
+var stick: Control
+var look_pad: Control
 var hud: Control
 var canvas: CanvasLayer
 var window: Control
@@ -33,106 +41,65 @@ func _ready() -> void:
 	_show_menu()
 
 func _make_world() -> void:
-	var world := WorldEnvironment.new()
+	var environment := WorldEnvironment.new()
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
 	env.background_color = BG
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color("b3c7e8")
-	env.ambient_light_energy = 0.75
-	world.environment = env
-	add_child(world)
-	var sun := DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-50, 27, -30)
-	sun.light_color = Color("ffd7a2")
-	sun.light_energy = 0.95
-	sun.shadow_enabled = false
-	add_child(sun)
-	_box(Vector3(0,-0.24,-2), Vector3(27,0.42,31), Color("33374f"))
-	_box(Vector3(0,-0.02,7), Vector3(26,0.08,7), Color("303548"))
-	for i in range(-12, 13, 4):
-		_box(Vector3(float(i),0.02,7), Vector3(1.5,0.018,0.11), Color("d2b882"))
-	for id in Case.definition.get("map", {}).keys():
-		var pos: Dictionary = Case.definition["map"][id]
-		var origin := Vector3(float(pos["x"]), 0, float(pos["z"]))
-		var color := Color("506079")
-		match id:
-			"office": color = Color("64506b")
-			"maintenance": color = Color("4e6870")
-			"roof": color = Color("5d597f")
-			"shop": color = Color("827357")
-			"street": color = Color("655567")
-		_box(origin + Vector3(0,0.018,0), Vector3(5.6,0.04,5.6), color)
-		_box(origin + Vector3(0.04,0.15,-2.65), Vector3(5.4,0.3,0.12), Color("bbb0a6"))
-		_box(origin + Vector3(-2.65,0.15,0), Vector3(0.12,0.3,5.3), Color("bbb0a6"))
-		objects[id] = origin
-	_make_props()
+	env.ambient_light_color = Color("c0bed6")
+	env.ambient_light_energy = 0.85
+	environment.environment = env
+	add_child(environment)
+	var light := DirectionalLight3D.new()
+	light.rotation_degrees = Vector3(-42,30,-24)
+	light.light_color = Color("eecfac")
+	light.light_energy = 1.05
+	light.shadow_enabled = false
+	add_child(light)
+	world_root = Node3D.new()
+	world_root.set_script(load("res://scripts/world/neighborhood.gd"))
+	world_root.name = "PhysicalNeighborhood"
+	add_child(world_root)
+	world_root.call("build",Case.definition)
+	objects = world_root.get("points")
+	clue_objects = world_root.get("clues")
 	actor = CharacterBody3D.new()
 	actor.name = "Investigator"
-	var shape := CapsuleShape3D.new()
-	shape.radius = 0.38
-	shape.height = 1.65
+	actor.floor_snap_length = 0.38
+	actor.collision_layer = 1
+	actor.collision_mask = 1
+	var capsule := CapsuleShape3D.new()
+	capsule.radius = 0.31
+	capsule.height = 1.70
 	var collision := CollisionShape3D.new()
-	collision.shape = shape
+	collision.shape = capsule
+	collision.position.y = 0.86
 	actor.add_child(collision)
 	add_child(actor)
 	actor_model = Node3D.new()
 	actor.add_child(actor_model)
-	_box(Vector3(0,0.7,0), Vector3(0.73,0.9,0.48), PURPLE, actor_model)
-	_box(Vector3(0,1.4,0), Vector3(0.51,0.56,0.48), Color("efbd97"), actor_model)
-	_box(Vector3(0,1.76,-0.05), Vector3(0.77,0.20,0.62), Color("28263b"), actor_model)
-	_box(Vector3(-0.25,0.17,0), Vector3(0.22,0.52,0.34), Color("222b44"), actor_model)
-	_box(Vector3(0.25,0.17,0), Vector3(0.22,0.52,0.34), Color("222b44"), actor_model)
+	_box(Vector3(0,0.89,0),Vector3(0.68,1.01,0.46),Color("655e9a"),actor_model)
+	_box(Vector3(0,1.52,0),Vector3(0.45,0.45,0.40),Color("c99372"),actor_model)
+	_box(Vector3(0,1.78,0.01),Vector3(0.58,0.19,0.50),Color("2d2940"),actor_model)
+	_box(Vector3(-0.24,0.25,0),Vector3(0.18,0.51,0.29),Color("2a304b"),actor_model)
+	_box(Vector3(0.24,0.25,0),Vector3(0.18,0.51,0.29),Color("2a304b"),actor_model)
+	_box(Vector3(0.31,0.88,0),Vector3(0.17,0.62,0.25),Color("d8b1a2"),actor_model)
+	_box(Vector3(-0.31,0.88,0),Vector3(0.17,0.62,0.25),Color("d8b1a2"),actor_model)
+	_box(Vector3(0,1.17,0.27),Vector3(0.22,0.35,0.07),Color("e8c97a"),actor_model)
 	camera = Camera3D.new()
-	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-	camera.size = 23.5
+	camera.projection = Camera3D.PROJECTION_PERSPECTIVE
+	camera.fov = 74.0
+	camera.near = 0.08
 	camera.current = true
 	add_child(camera)
 	actor.global_position = Case.player_position
 	_update_camera()
+	actor_model.visible = false
 
-func _make_props() -> void:
-	# Each room has a tangible, differently shaped marker; inspection requires proximity.
-	_box(Vector3(0,0.7,-0.4),Vector3(1.7,1.3,0.3),Color("202639")) # camera
-	_box(Vector3(0,1.3,-0.62),Vector3(1.2,0.75,0.12),Color("9cb8ca"))
-	_box(Vector3(-7,0.47,-2),Vector3(2.3,0.9,1.25),Color("695044")) # desk
-	_box(Vector3(-7,1,-2),Vector3(1,0.07,0.75),Color("dad9c9"))
-	_box(Vector3(7,0.9,-2),Vector3(2.0,1.7,0.4),Color("536f72")) # electrical panel
-	for i in range(3):
-		_box(Vector3(6.4+float(i)*0.6,1.15,-2.25),Vector3(0.2,0.3,0.10), GOLD)
-	for i in range(4):
-		_box(Vector3(0,0.10+float(i)*0.12,-7-float(i)*0.43), Vector3(2.2,0.22,0.40),Color("998c84"))
-	_box(Vector3(-7,0.22,-11), Vector3(2.3,0.42,2),Color("767e8c"))
-	_box(Vector3(-7,0.55,-11.5), Vector3(0.28,0.3,0.6),GOLD)
-	_box(Vector3(7,1,-11),Vector3(3.8,1.9,1.4),Color("837354"))
-	_box(Vector3(7,1.7,-10.21),Vector3(2.7,0.37,0.10),Color("ddbc84"))
-	_box(Vector3(0,0.10,5),Vector3(1.2,0.2,0.6),Color("948378"))
-	# Street witness represented with face, dark hair and orange coat.
-	_box(Vector3(1.45,0.81,7),Vector3(0.64,1.08,0.50),Color("bd7955"))
-	_box(Vector3(1.45,1.5,7),Vector3(0.49,0.52,0.45),Color("f1b48d"))
-	_box(Vector3(1.45,1.78,7),Vector3(0.65,0.15,0.51),Color("2b2836"))
-	for sx in [-1.0,1.0]:
-		_box(Vector3(sx*12.5,1.15,-4),Vector3(0.25,2.4,23),Color("565166"))
-	# Each discovery is a separate interactable physical object, not a room-wide loot action.
-	clue_objects = {
-		"camera_frame": Vector3(0.0,0.0,-0.4),
-		"clock_note": Vector3(-8.2,0.0,-0.7),
-		"glass": Vector3(-5.9,0.0,-3.6),
-		"power_log": Vector3(6.2,0.0,-0.7),
-		"ups": Vector3(8.0,0.0,-3.5),
-		"witness_coat": Vector3(1.45,0.0,7.0),
-		"roof_marks": Vector3(-7.0,0.0,-11.0),
-		"shop_receipt": Vector3(7.0,0.0,-11.0),
-	}
-	for clue_id in clue_objects:
-		var loc: Vector3 = clue_objects[clue_id]
-		# Gold floor pins are replaceable scene hooks for licensed GLB props.
-		_box(loc + Vector3(0.0,0.09,0.0),Vector3(0.38,0.13,0.38),GOLD)
-
-func _box(pos: Vector3, size: Vector3, color: Color, parent: Node3D = null) -> void:
+func _box(pos: Vector3, dimensions: Vector3, color: Color, parent: Node3D = null) -> void:
 	var mesh := MeshInstance3D.new()
 	var cube := BoxMesh.new()
-	cube.size = size
+	cube.size = dimensions
 	mesh.mesh = cube
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = color
@@ -143,7 +110,7 @@ func _box(pos: Vector3, size: Vector3, color: Color, parent: Node3D = null) -> v
 
 func _make_overlay() -> void:
 	viewport_font = SystemFont.new()
-	viewport_font.font_names = PackedStringArray(["Noto Sans Arabic", "Noto Sans", "Arial", "Roboto"])
+	viewport_font.font_names = PackedStringArray(["Noto Naskh Arabic", "Noto Sans Arabic", "Noto Sans", "Roboto"])
 	var theme := Theme.new()
 	theme.default_font = viewport_font
 	theme.default_font_size = 19
@@ -178,40 +145,58 @@ func _make_overlay() -> void:
 func _physics_process(delta: float) -> void:
 	if current_screen != "game" or not Case.started:
 		return
-	var direction := Vector2.ZERO
-	if Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT): direction.x -= 1
-	if Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT): direction.x += 1
-	if Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP): direction.y -= 1
-	if Input.is_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN): direction.y += 1
-	var v := (direction + touch).limit_length(1.0)
-	actor.velocity = Vector3(v.x, 0, v.y) * WALK_SPEED
+	var motion := Vector3.ZERO
+	if camera_mode != 2:
+		# Stick y points down on screen; negative y is forward (-Z).
+		motion = Vector3(touch.x,0,touch.y).rotated(Vector3.UP,yaw).limit_length(1.0)
+	actor.velocity.x = motion.x * WALK_SPEED
+	actor.velocity.z = motion.z * WALK_SPEED
+	if actor.is_on_floor():
+		actor.velocity.y = -0.15
+	else:
+		actor.velocity.y -= GRAVITY * delta
 	actor.move_and_slide()
-	actor.position.x = clampf(actor.position.x, -11.8, 11.8)
-	actor.position.z = clampf(actor.position.z, -13.3, 11.2)
-	if v.length_squared() > 0.03:
-		actor_model.rotation.y = lerp_angle(actor_model.rotation.y, atan2(v.x, v.y), minf(delta*9,1.0))
-	Case.player_position = actor.position
+	if motion.length_squared() > 0.04:
+		actor_model.rotation.y = lerp_angle(actor_model.rotation.y,atan2(-motion.x,-motion.z),minf(delta*9.0,1.0))
+	Case.player_position = actor.global_position
 	if is_instance_valid(proximity):
-		var nearby := _nearby_clue()
-		var prompt := Loc.t("hud.prompt") if nearby.is_empty() else Loc.t("hud.clue_near") + Loc.t("ev.name."+nearby)
+		var evidence := _nearby_clue()
+		var door: String = world_root.call("nearest_door",actor.global_position)
+		var prompt := Loc.t("hud.prompt")
+		if not evidence.is_empty():
+			prompt = Loc.t("hud.clue_near") + Loc.t("ev.name."+evidence)
+		elif not door.is_empty():
+			prompt = Loc.t("hud.door_near") + Loc.t("loc."+door)
 		if proximity.text != prompt:
 			proximity.text = prompt
 	_update_camera()
 
 func _update_camera() -> void:
-	camera.position = actor.global_position + Vector3(15,19,18)
-	camera.look_at(actor.global_position + Vector3(0,0.6,0))
+	if camera_mode == 2:
+		camera.global_position = Vector3(0.8,6.7,4.8)
+		camera.look_at(Vector3(0,0.6,-1.9),Vector3.UP)
+	elif camera_mode == 1:
+		camera.global_position = actor.global_position + Vector3(0,2.20,0) + Vector3(0,0,3.65).rotated(Vector3.UP,yaw)
+		camera.look_at(actor.global_position + Vector3(0,1.25,0),Vector3.UP)
+	else:
+		camera.global_position = actor.global_position + Vector3(0,1.59,0)
+		camera.rotation = Vector3(pitch,yaw,0)
+	actor_model.visible = camera_mode != 0
 
-func _unhandled_key_input(event: InputEvent) -> void:
-	if not event is InputEventKey:
+func _look(delta_pixels: Vector2) -> void:
+	if current_screen != "game" or camera_mode == 2:
 		return
-	var key := event as InputEventKey
-	if not key.pressed or key.echo or current_screen != "game":
-		return
-	if key.keycode == KEY_E:
-		_inspect()
-	if key.keycode == KEY_B:
-		_show_board()
+	yaw -= delta_pixels.x * LOOK_SENSITIVITY
+	pitch = clampf(pitch-delta_pixels.y*LOOK_SENSITIVITY,-1.20,1.20)
+	_update_camera()
+
+func _cycle_camera() -> void:
+	camera_mode = (camera_mode+1)%3
+	touch = Vector2.ZERO
+	if is_instance_valid(stick):
+		stick.call("release")
+	_show_toast(Loc.t(["camera.first","camera.shoulder","camera.cctv"][camera_mode]))
+	_update_camera()
 
 func _nearby() -> String:
 	var nearest := ""
@@ -237,23 +222,35 @@ func _nearby_clue() -> String:
 func _inspect() -> void:
 	var clue_id := _nearby_clue()
 	if clue_id.is_empty():
+		var door_id: String = world_root.call("nearest_door",actor.global_position)
+		if not door_id.is_empty() and world_root.call("toggle_door",door_id,actor.global_position):
+			_show_toast(Loc.t("hud.door_toggled"))
+			return
 		_show_toast(Loc.t("hint.unavailable"))
 		return
 	var item: Dictionary = Case.evidence_by_id(clue_id)
-	var location: String = item.get("location", "")
+	var location: String = item.get("location","")
 	var lines: Array[String] = []
 	if clue_id == "witness_coat":
 		lines.append(Loc.t("npc.hello"))
-	if Case.discover(clue_id, location):
-		lines.append(Loc.t("hint.new") + Loc.t(item["text_key"]))
+	if Case.discover(clue_id,location):
+		lines.append(Loc.t("hint.new")+Loc.t(item["text_key"]))
 	else:
-		lines.append(Loc.t("hint.old") + Loc.t(item["text_key"]))
-	_show_message("loc."+location, "\n\n".join(lines))
+		lines.append(Loc.t("hint.old")+Loc.t(item["text_key"]))
+	var portrait := ""
+	match clue_id:
+		"witness_coat": portrait = "amina"
+		"camera_frame","roof_marks": portrait = "mariam"
+		"power_log","clock_note","glass": portrait = "fared"
+		"shop_receipt": portrait = "nabil"
+	_show_message("loc."+location,"\n\n".join(lines),portrait)
 
 func _make_button(label: String, callback: Callable, accent: bool = false) -> Button:
 	var b := Button.new()
 	b.text = label
-	b.custom_minimum_size = Vector2(180,49)
+	b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	b.text_direction = Control.TEXT_DIRECTION_RTL if Loc.language == "ar_EG" else Control.TEXT_DIRECTION_LTR
+	b.custom_minimum_size = Vector2(136,55)
 	b.add_theme_color_override("font_color", Color("111729") if accent else WHITE)
 	b.add_theme_color_override("font_hover_color", Color("111729") if accent else GOLD)
 	var sb := StyleBoxFlat.new()
@@ -274,6 +271,9 @@ func _label(text_value: String, font_size: int = 19, tint: Color = WHITE) -> Lab
 	var l := Label.new()
 	l.text = text_value
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.text_direction = Control.TEXT_DIRECTION_RTL if Loc.language == "ar_EG" else Control.TEXT_DIRECTION_LTR
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT if Loc.language == "ar_EG" else HORIZONTAL_ALIGNMENT_LEFT
+	l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	l.add_theme_color_override("font_color", tint)
 	l.add_theme_font_size_override("font_size", font_size)
 	return l
@@ -288,26 +288,37 @@ func _panel(title: String, width: float = 930, height: float = 610) -> VBoxConta
 	_clean(window)
 	window.visible = true
 	var scrim := ColorRect.new()
-	scrim.color = Color(0.035,0.047,0.079,0.87)
+	scrim.color = Color(0.035,0.047,0.079,0.90)
 	scrim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	scrim.mouse_filter = Control.MOUSE_FILTER_STOP
 	window.add_child(scrim)
 	var panel := PanelContainer.new()
-	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	panel.custom_minimum_size = Vector2(width,height)
-	panel.position = Vector2(-width*0.5,-height*0.5)
+	var viewport: Vector2 = get_viewport().get_visible_rect().size
+	var safe_width := minf(width,viewport.x*0.94)
+	var safe_height := minf(height,viewport.y*0.91)
+	panel.anchor_left = 0.5
+	panel.anchor_right = 0.5
+	panel.anchor_top = 0.5
+	panel.anchor_bottom = 0.5
+	panel.offset_left = -safe_width*0.5
+	panel.offset_right = safe_width*0.5
+	panel.offset_top = -safe_height*0.5
+	panel.offset_bottom = safe_height*0.5
+	panel.clip_contents = true
 	var style := StyleBoxFlat.new()
 	style.bg_color = PANEL
 	style.border_color = PURPLE
 	style.set_border_width_all(2)
-	style.set_corner_radius_all(22)
-	style.set_content_margin_all(26)
-	panel.add_theme_stylebox_override("panel", style)
+	style.set_corner_radius_all(17)
+	style.set_content_margin_all(18)
+	panel.add_theme_stylebox_override("panel",style)
 	window.add_child(panel)
 	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 14)
+	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	col.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	col.add_theme_constant_override("separation",9)
 	panel.add_child(col)
-	col.add_child(_label(title, 31, GOLD))
+	col.add_child(_label(title,26,GOLD))
 	return col
 
 func _show_menu() -> void:
@@ -331,6 +342,9 @@ func _show_menu() -> void:
 
 func _enter_game() -> void:
 	actor.position = Case.player_position
+	camera_mode = 0
+	touch = Vector2.ZERO
+	_update_camera()
 	current_screen = "game"
 	window.visible = false
 	_rebuild_hud()
@@ -339,55 +353,66 @@ func _enter_game() -> void:
 func _rebuild_hud() -> void:
 	_clean(hud)
 	hud.visible = true
-	var top := HBoxContainer.new()
-	top.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	top.offset_left = 24
-	top.offset_right = -24
-	top.offset_top = 14
-	top.offset_bottom = 74
-	top.add_theme_constant_override("separation", 10)
-	hud.add_child(top)
-	top.add_child(_label(Loc.t("case.title"),25,GOLD))
-	top.add_spacer(false)
+	# The right half handles free-look; controls sit above it and consume their touches.
+	look_pad = Control.new()
+	look_pad.set_script(load("res://scripts/ui/look_pad.gd"))
+	look_pad.anchor_left = 0.42
+	look_pad.anchor_right = 1.0
+	look_pad.anchor_top = 0.14
+	look_pad.anchor_bottom = 0.96
+	hud.add_child(look_pad)
+	look_pad.connect("look_changed",Callable(self,"_look"))
+	var header := HBoxContainer.new()
+	header.anchor_right = 1.0
+	header.offset_left = 20
+	header.offset_right = -20
+	header.offset_top = 10
+	header.offset_bottom = 73
+	header.add_theme_constant_override("separation",9)
+	hud.add_child(header)
+	var title := _label(Loc.t("case.title"),21,GOLD)
+	header.add_child(title)
+	header.add_spacer(false)
 	var progress := Loc.t("ui.saved").replace("{count}",str(Case.found.size())).replace("{links}",str(Case.link_count()))
-	top.add_child(_label(progress,18))
-	proximity = _label(Loc.t("hud.prompt"),21,GOLD)
-	proximity.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	proximity.offset_left = 24
-	proximity.offset_top = 78
-	proximity.offset_bottom = 127
+	var status := _label(progress,15)
+	status.custom_minimum_size.x = 140
+	header.add_child(status)
+	header.add_child(_make_button(Loc.t("hud.camera"),_cycle_camera))
+	header.add_child(_make_button(Loc.t("hud.menu"),func():
+		Saves.save_game()
+		_show_menu()))
+	proximity = _label(Loc.t("hud.prompt"),17,GOLD)
+	proximity.anchor_left = 0.20
+	proximity.anchor_right = 0.80
+	proximity.offset_top = 77
+	proximity.offset_bottom = 125
+	proximity.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hud.add_child(proximity)
-	var bottom := HBoxContainer.new()
-	bottom.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
-	bottom.offset_left = 20
-	bottom.offset_right = -20
-	bottom.offset_top = -125
-	bottom.offset_bottom = -14
-	hud.add_child(bottom)
-	var left := GridContainer.new()
-	left.columns = 3
-	bottom.add_child(left)
-	var movements := [Vector2(-1,0),Vector2(0,-1),Vector2(1,0),Vector2(0,1)]
-	var titles := ["◀","▲","▶","▼"]
-	for index in range(4):
-		var arrow := _make_button(titles[index],func():pass)
-		arrow.custom_minimum_size = Vector2(64,48)
-		var heading: Vector2 = movements[index]
-		arrow.button_down.connect(func(): touch = heading)
-		arrow.button_up.connect(func(): touch = Vector2.ZERO)
-		left.add_child(arrow)
-	bottom.add_spacer(false)
+	stick = Control.new()
+	stick.set_script(load("res://scripts/ui/touch_joystick.gd"))
+	stick.anchor_top = 1.0
+	stick.anchor_bottom = 1.0
+	stick.offset_left = 24
+	stick.offset_right = 196
+	stick.offset_top = -216
+	stick.offset_bottom = -44
+	hud.add_child(stick)
+	stick.connect("changed",func(dir:Vector2):touch=dir)
 	var actions := VBoxContainer.new()
-	actions.add_theme_constant_override("separation",8)
-	bottom.add_child(actions)
-	actions.add_child(_make_button(Loc.t("hud.interact"), _inspect, true))
-	actions.add_child(_make_button(Loc.t("hud.board"), _show_board))
-	var others := VBoxContainer.new()
-	bottom.add_child(others)
-	others.add_child(_make_button(Loc.t("hud.save"),func():
+	actions.anchor_left = 1.0
+	actions.anchor_right = 1.0
+	actions.anchor_top = 1.0
+	actions.anchor_bottom = 1.0
+	actions.offset_left = -220
+	actions.offset_right = -22
+	actions.offset_top = -236
+	actions.offset_bottom = -30
+	actions.add_theme_constant_override("separation",7)
+	hud.add_child(actions)
+	actions.add_child(_make_button(Loc.t("hud.interact"),_inspect,true))
+	actions.add_child(_make_button(Loc.t("hud.board"),_show_board))
+	actions.add_child(_make_button(Loc.t("hud.save"),func():
 		_show_toast(Loc.t("hud.saved") if Saves.save_game() else Loc.t("hud.save_fail"))))
-	others.add_child(_make_button(Loc.t("hud.menu"),func():
-		Saves.save_game(); _show_menu()))
 
 func _refresh_hud() -> void:
 	if current_screen == "game":
@@ -396,15 +421,28 @@ func _refresh_hud() -> void:
 func _show_toast(message: String) -> void:
 	toast.text = message
 
-func _show_message(title: String, message: String) -> void:
+func _show_message(title: String, message: String, portrait_id: String = "") -> void:
 	current_screen = "message"
 	hud.visible = false
-	var content := _panel(Loc.t(title),920,525)
+	var content := _panel(Loc.t(title),900,540)
+	var row := HBoxContainer.new()
+	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	row.add_theme_constant_override("separation",14)
+	content.add_child(row)
+	if portrait_id in ["amina","mariam","fared","nabil"]:
+		var image := TextureRect.new()
+		image.texture = load("res://assets/portraits/"+portrait_id+".svg")
+		image.custom_minimum_size = Vector2(112,112)
+		image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		image.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		row.add_child(image)
 	var scroll := ScrollContainer.new()
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	content.add_child(scroll)
+	row.add_child(scroll)
 	var paragraph := _label(message,23)
-	paragraph.custom_minimum_size.x = 800
+	paragraph.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(paragraph)
 	content.add_child(_make_button(Loc.t("ui.dismiss"),_return_to_game,true))
 
@@ -422,7 +460,8 @@ func _show_board() -> void:
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.add_child(scroll)
 	var list := VBoxContainer.new()
-	list.custom_minimum_size.x = 958
+	list.custom_minimum_size.x = 0
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	list.add_theme_constant_override("separation",10)
 	scroll.add_child(list)
 	if Case.found.is_empty():
@@ -462,7 +501,8 @@ func _show_timeline() -> void:
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.add_child(scroll)
 	var theories := VBoxContainer.new()
-	theories.custom_minimum_size.x = 880
+	theories.custom_minimum_size.x = 0
+	theories.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	theories.add_theme_constant_override("separation",8)
 	scroll.add_child(theories)
 	for id in ["clock","camera","jacket","roof","ending"]:
