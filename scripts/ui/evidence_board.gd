@@ -22,7 +22,19 @@ func _build() -> void:
 		if not Case.found.has(id):
 			continue
 		var card := Button.new()
-		card.text = Loc.t(item["text_key"])
+		card.text = Loc.t("ev.name."+id)
+		card.text_direction = Control.TEXT_DIRECTION_RTL if Loc.language == "ar_EG" else Control.TEXT_DIRECTION_LTR
+		var portrait := ""
+		match id:
+			"witness_coat": portrait = "amina"
+			"camera_frame","roof_marks": portrait = "mariam"
+			"clock_note","power_log","glass": portrait = "fared"
+			"shop_receipt": portrait = "nabil"
+		if not portrait.is_empty():
+			card.icon = load("res://assets/portraits/"+portrait+".svg")
+			card.expand_icon = true
+			card.add_theme_constant_override("icon_max_width",68)
+			card.icon_alignment = HORIZONTAL_ALIGNMENT_RIGHT if Loc.language == "ar_EG" else HORIZONTAL_ALIGNMENT_LEFT
 		card.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		card.alignment = HORIZONTAL_ALIGNMENT_CENTER
 		card.custom_minimum_size = Vector2(CARD_WIDTH, CARD_HEIGHT)
