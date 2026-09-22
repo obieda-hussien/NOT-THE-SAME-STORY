@@ -51,10 +51,12 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
+      # ubuntu-latest already includes an Android SDK and command-line tools.
+      # setup-android@v3 tries to install the obsolete 'tools' package and fails.
       - name: Install Android SDK
         run: |
-          yes | sdkmanager --licenses >/dev/null || true
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          command -v sdkmanager
           sdkmanager --install 'platform-tools' 'platforms;android-35' 'build-tools;35.0.1'
       - name: Install pinned Godot editor and Android export templates
         run: |
