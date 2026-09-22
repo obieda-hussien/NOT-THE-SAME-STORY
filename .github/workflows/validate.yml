@@ -37,6 +37,8 @@ jobs:
         run: '"$GODOT_BIN" --headless --path . --editor --quit'
       - name: Execute deterministic core tests
         run: '"$GODOT_BIN" --headless --path . --script tests/core_tests.gd'
+      - name: Verify mobile physics, doors, cameras and Arabic panel bounds
+        run: '"$GODOT_BIN" --headless --path . --script tests/mobile_tests.gd'
       - name: Smoke-test startup without a display
         run: '"$GODOT_BIN" --headless --path . --quit-after 20'
 
