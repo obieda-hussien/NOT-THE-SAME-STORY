@@ -1,0 +1,49 @@
+{
+  "id": "case_1142", "schema": 1,
+  "title_key": "case.title",
+  "truth": {
+    "missing_person": "mariam",
+    "outcome": "voluntary_shelter_not_abduction",
+    "camera_offset_minutes": 7,
+    "power_outage": ["23:32", "23:50"],
+    "camera_power": "ups",
+    "timeline": [
+      {"id":"event_01","time":"23:29","place":"maintenance","actors":["hossam"],"action":"Hossam notices that a bypass has overheated the stairwell feeder."},
+      {"id":"event_02","time":"23:31","place":"maintenance","actors":["fared"],"action":"Fared changes the electrical log to conceal earlier bypass warnings."},
+      {"id":"event_03","time":"23:32","place":"building","actors":["hossam"],"action":"Power fails in apartments and street-facing lights; UPS continues powering DVR and camera."},
+      {"id":"event_04","time":"23:35","recorded_time":"23:42","place":"entrance","actors":["mariam"],"action":"Mariam enters; CCTV clock is seven minutes fast."},
+      {"id":"event_05","time":"23:36","place":"office","actors":["mariam","fared"],"action":"Mariam confronts Fared about the bypass."},
+      {"id":"event_06","time":"23:37","place":"office","actors":["mariam","fared"],"action":"Glass breaks when Fared knocks a cup off the desk; nobody is hurt."},
+      {"id":"event_07","time":"23:40","place":"street","actors":["fared"],"action":"Fared leaves via a side service passage in a dark jacket; witness sees clothing, not face."},
+      {"id":"event_08","time":"23:45","place":"roof","actors":["mariam"],"action":"Mariam climbs the roof stairs carrying photographed log records."},
+      {"id":"event_09","time":"23:47","place":"shop","actors":["mariam","nabil"],"action":"Mariam crosses the connected roof landing to the shop storage room, asks Nabil for safety and keeps evidence."},
+      {"id":"event_10","time":"23:50","place":"building","actors":["hossam"],"action":"Power is restored after Hossam isolates the unsafe bypass."}
+    ],
+    "sources_of_uncertainty": {
+      "camera_frame":"CCTV embedded clock is seven minutes ahead; UPS-powered recorder survives outage.",
+      "witness_coat":"Witness could distinguish jacket, not face; side passage exits away from main entrance.",
+      "glass":"Broken cup does not establish assault.",
+      "roof_marks":"Footprints indicate use of roof route, but not their maker alone."
+    }
+  },
+  "map": {
+    "entrance":{"x":0,"z":0},"office":{"x":-7,"z":-2},"maintenance":{"x":7,"z":-2},
+    "stair":{"x":0,"z":-7},"roof":{"x":-7,"z":-11},"shop":{"x":7,"z":-11},"street":{"x":0,"z":7}
+  },
+  "evidence": [
+    {"id":"camera_frame","location":"entrance","source":"security_dvr","type":"digital","observed":"One figure enters; overlay reads 23:42.","claim_time":"23:42","reliability":"clock_unverified","text_key":"ev.camera"},
+    {"id":"clock_note","location":"office","source":"caretaker_clock_check","type":"document","observed":"Clock check against radio says DVR is 7 minutes fast.","claim_time":"23:51","reliability":"verified_comparison","text_key":"ev.clock"},
+    {"id":"power_log","location":"maintenance","source":"electrical_log","type":"document","observed":"Outage 23:32–23:50; altered entry at 23:31.","claim_time":"23:31","reliability":"tampered","text_key":"ev.power"},
+    {"id":"ups","location":"maintenance","source":"ups_battery","type":"physical","observed":"DVR has independent battery power.","claim_time":"23:32","reliability":"inspected","text_key":"ev.ups"},
+    {"id":"glass","location":"office","source":"broken_cup","type":"physical","observed":"Glass pieces beside desk, no confirmed blood or injuries.","claim_time":"23:37","reliability":"inspected","text_key":"ev.glass"},
+    {"id":"witness_coat","location":"street","source":"witness_amina","type":"testimony","observed":"A dark jacket passed by the side passage around 23:40; face not visible.","claim_time":"23:40","reliability":"limited_visibility","text_key":"ev.witness"},
+    {"id":"roof_marks","location":"roof","source":"roof_stairwell","type":"physical","observed":"Fresh dust prints toward connected shop roof landing.","claim_time":"unknown","reliability":"unattributed_trace","text_key":"ev.roof"},
+    {"id":"shop_receipt","location":"shop","source":"nabil_shop","type":"document","observed":"Nabil noted Mariam arriving at 23:47 and requesting help.","claim_time":"23:47","reliability":"corroborated_by_nabil","text_key":"ev.shop"}
+  ],
+  "witnesses": [
+    {"id":"amina","place":"street","evidence_id":"witness_coat","knowledge":["dark_jacket","side_passage"],"not_known":["identity","motive"]}
+  ],
+  "required_links": [
+    ["camera_frame","clock_note"], ["power_log","ups"], ["roof_marks","shop_receipt"]
+  ]
+}
