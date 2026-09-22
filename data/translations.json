@@ -80,7 +80,13 @@
     "ev.name.ups": "Battery backup",
     "ev.name.witness_coat": "Talk to Amina",
     "ev.name.roof_marks": "Roof footprints",
-    "ev.name.shop_receipt": "Shop register"
+    "ev.name.shop_receipt": "Shop register",
+    "hud.camera": "CAMERA",
+    "hud.door_near": "Door: ",
+    "hud.door_toggled": "Door opened / closed.",
+    "camera.first": "First-person view",
+    "camera.shoulder": "Behind-the-shoulder view",
+    "camera.cctv": "SECURITY CAMERA · Entry / 01"
   },
   "ar_EG": {
     "app.title": "مش نفس القصة",
@@ -163,6 +169,12 @@
     "ev.name.ups": "البطارية الاحتياطية",
     "ev.name.witness_coat": "اتكلم مع أمينة",
     "ev.name.roof_marks": "آثار السطح",
-    "ev.name.shop_receipt": "سجل المحل"
+    "ev.name.shop_receipt": "سجل المحل",
+    "hud.camera": "الكاميرا",
+    "hud.door_near": "باب قريب: ",
+    "hud.door_toggled": "اتفتح / اتقفل الباب.",
+    "camera.first": "منظور الشخصية",
+    "camera.shoulder": "كاميرا ورا الشخصية",
+    "camera.cctv": "كاميرا المراقبة · المدخل / ٠١"
   }
 }
