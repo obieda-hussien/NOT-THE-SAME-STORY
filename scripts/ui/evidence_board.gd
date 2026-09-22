@@ -22,7 +22,19 @@ func _build() -> void:
 		if not Case.found.has(id):
 			continue
 		var card := Button.new()
-		card.text = Loc.t(item["text_key"])
+		card.text = Loc.t("ev.name."+id)
+		card.text_direction = Control.TEXT_DIRECTION_RTL if Loc.language == "ar_EG" else Control.TEXT_DIRECTION_LTR
+		var portrait := ""
+		match id:
+			"witness_coat": portrait = "amina"
+			"camera_frame","roof_marks": portrait = "mariam"
+			"clock_note","power_log","glass": portrait = "fared"
+			"shop_receipt": portrait = "nabil"
+		if not portrait.is_empty():
+			card.icon = load("res://assets/portraits/"+portrait+".svg")
+			card.expand_icon = true
+			card.add_theme_constant_override("icon_max_width",68)
+			card.icon_alignment = HORIZONTAL_ALIGNMENT_RIGHT if Loc.language == "ar_EG" else HORIZONTAL_ALIGNMENT_LEFT
 		card.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		card.alignment = HORIZONTAL_ALIGNMENT_CENTER
 		card.custom_minimum_size = Vector2(CARD_WIDTH, CARD_HEIGHT)
@@ -60,40 +72,24 @@ func _type_color(type: String) -> Color:
 	return Color("ddd6cf")
 
 func _handle_card(event: InputEvent, id: String) -> void:
-	if event is InputEventMouseButton:
-		var e := event as InputEventMouseButton
-		if e.button_index != MOUSE_BUTTON_LEFT:
-			return
-		if e.pressed:
+	if event is InputEventScreenTouch:
+		var touch := event as InputEventScreenTouch
+		if touch.pressed:
 			dragging = id
-			pointer_start = get_local_mouse_position()
+			pointer_start = touch.position
 			original = cards[id].position
 			moved = false
 		else:
 			_finalize_drag(id)
-	elif event is InputEventMouseMotion and dragging == id:
-		var motion := event as InputEventMouseMotion
-		if motion.button_mask & MOUSE_BUTTON_MASK_LEFT:
-			_drag(id,get_local_mouse_position() - pointer_start)
 	elif event is InputEventScreenDrag and dragging == id:
-		var touch := event as InputEventScreenDrag
-		_drag(id,touch.position - pointer_start)
-	elif event is InputEventScreenTouch:
-		var t := event as InputEventScreenTouch
-		if t.pressed:
-			dragging = id
-			pointer_start = t.position
-			original = cards[id].position
-			moved = false
-		else:
-			_finalize_drag(id)
-
-func _drag(id: String, delta: Vector2) -> void:
-	if delta.length() < 8.0 and not moved:
-		return
-	moved = true
-	cards[id].position = Vector2(clampf(original.x+delta.x,0.0,size.x-CARD_WIDTH),clampf(original.y+delta.y,0.0,size.y-CARD_HEIGHT))
-	queue_redraw()
+		var swipe := event as InputEventScreenDrag
+		if swipe.relative.length() < 2.0 and not moved:
+			return
+		moved = true
+		cards[id].position = Vector2(
+			clampf(cards[id].position.x+swipe.relative.x,0.0,size.x-CARD_WIDTH),
+			clampf(cards[id].position.y+swipe.relative.y,0.0,size.y-CARD_HEIGHT))
+		queue_redraw()
 
 func _finalize_drag(id: String) -> void:
 	if dragging != id:

@@ -1,32 +1,22 @@
-# Architecture and milestones
+# Architecture and development status
 
-## Current scope — offline single-player first-slice **source code**
+## Single-player first-slice implementation
 
-- `scripts/core/case.gd`: stable evidence IDs, location-gated collection, hypothesis checks, graph, snapshot schema.
-- `scripts/core/loc.gd`: runtime `en` ↔ `ar_EG`; UI rebuilding without changing state.
-- `scripts/core/saves.gd`: SHA-256 checked, temp file + backup restore on interrupted replacement.
-- `scripts/world/game.gd`: procedural diorama and mobile-first touch UI. Camera moves with one investigator.
-- `scripts/ui/evidence_board.gd`: draggable cards and confirmed graph edges; saved card positions.
-- `data/case_1142.json`: authored case truth and clue definitions; **not a production client-safe case bundle**.
-- `data/translations.json`: language-independent keys and translations.
-- `tests/core_tests.gd`: Godot headless logic tests. **Run in Godot; not executed in the authoring sandbox.**
+- `scripts/world/neighborhood.gd`: compact Cairo/Alexandria-inspired night block using actual `StaticBody3D` collisions: floors, four doorway frames and interactive door panels, cabinets/desks, street furniture, trees, pole trunks, an NPC. Visual-only decorations remain collision-free.
+- `scripts/world/game.gd`: touch first-person controller with gravity/`CharacterBody3D.move_and_slide()`, look swipes and shoulder/surveillance camera switching, mobile HUD, evidence inspection, adaptive panels.
+- `scripts/ui/touch_joystick.gd`, `look_pad.gd`: independent touch capture and reset, supporting two thumbs without keyboard controls.
+- `scripts/ui/evidence_board.gd`: original portrait-enabled draggable mobile clue graph.
+- `scripts/core/case.gd`: canonical timeline, discovered evidence, gated locations, useful graph links, hypothesis checks, versioned game snapshot.
+- `scripts/core/saves.gd`: exact-byte SHA-256, tmp-file + backup rollback, restore.
+- `scripts/core/loc.gd`: runtime ar_EG and en, data-driven labels, UI rebuilt on change.
+- `assets/portraits/` and `assets/evidence/`: original SVG illustrations imported as renderable in-game image assets, **not** GLB models or finished animations.
 
-## Multiplay security plan (NOT IMPLEMENTED in this first slice)
+## Automated verification
 
-Host is authoritative, validates every interaction against player position and role, and holds secret event state. Messages contain only player-approved observations or public board IDs. Session/player IDs are opaque, reconnect tokens are unguessable and expire, event IDs enforce idempotence, board ops have revision numbers. Never trust client-submitted discoveries/times, nor send the entire case JSON to a client.
+`tests/core_tests.gd` tests core truth/evidence/serialization. `tests/mobile_tests.gd` tests physical colliders, doors including collision toggles, camera states and Arabic-panel geometry. `tests/verify_source.py` tests data chronology and localization completeness. GitHub Actions exports an installable Android debug artifact after the logic suite succeeds. Device frame-rate, real touch feel, and Arabic shaping are *not* covered by headless CI.
 
-Important caveat: the *current offline build* includes `data/case_1142.json` and thus includes authored truth in the exported APK. For true client-memory secrecy, split server-truth and publicly authored observations into separate runtime and export bundles before networking ships; doing so alone cannot protect secrets from the physical host or a user who reverse-engineers a game with publicly distributed identical case content. A dedicated LAN-host-only authored-truth DLC/bundle can improve non-host clients' protection.
+## Not yet implemented
 
-ENet UDP for room replication in Milestone 4; optional UDP discovery broadcast and manual IP fallback. Android `INTERNET` export permission required. Android may block/multicast-gate discovery and hotspot traffic; no hardcoded gateway. QR join requires encoding the currently bound local IP, port, and room token—not unverified assumptions.
+LAN/Hotspot, host-only truth, player-specific knowledge, QR entry and multiplayer reconnect, authored dialogue trees, meaningful room-by-room narrative, realistic rigged models, physical second floor/roof navigation, interaction raycasts, audio and accessibility settings. No multiplayer claims should be made for current APK.
 
-## Planned milestones
-
-1. M1: Godot project + Android export **source setup** (APK not yet built).
-2. M2: mobile camera/touch, evidence interaction, bilingual board and hypothesis evaluation in source (runtime validation outstanding).
-3. M3: authored first case with actual explorable interiors, dialogue, sounds, clocks, full timeline renderer.
-4. M4: authoritative LAN protocol, role-specific payloads, reconnection, private knowledge, 2–4 device tests.
-5. M5: consistent licensed GLB assets + audio, animation, inspection screens, measured low-end Android performance.
-
-## Notes
-
-The initial diorama uses original procedural box meshes so there are no external-asset redistributions. The user-supplied detective image has been inspected for broad visual art direction (see `docs/ART_DIRECTION.md`); it is not an asset licensed for redistribution. SystemFont uses installed Android Noto/Roboto fallbacks; a distributable font with a verified redistribution license must be chosen and tested before shipping. No artwork, generated 3D asset, APK, real multiplayer, or device FPS has been verified yet.
+Important multiplayer security limitation: current offline `data/case_1142.json` includes the authored truth in the APK. Before adding clients, split host-only truth from client-visible observations; never send this case JSON to peers, and document that the host device can access its own files. No internet-permission requirement until LAN transport lands.

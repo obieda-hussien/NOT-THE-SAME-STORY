@@ -1,38 +1,32 @@
 # NOT THE SAME STORY / مش نفس القصة
 
-Godot **4.7.2** source project for the first offline single-player investigation slice. This is **not** a completed commercial game, Android APK, or tested multiplayer release.
+Godot **4.7.2** Android-first offline investigation. **Debug APKs are built by GitHub Actions** on successful commits; this is still a first playable slice, not a finished commercial title or a tested multiplayer game.
 
-## Run
+## Android touch controls
 
-1. Install Godot 4.7.2 Standard (not .NET). Import `project.godot`.
-2. Run with F6/F5 or: `godot --path .`.
-3. New investigation → WASD/arrow keys or four touch arrows → approach one of the seven different diorama areas, approach a gold clue marker (each clue is inspected individually), then INSPECT / TALK (or E).
-4. Gather clues at entrance, caretaker's office, maintenance room, street witness, rooftop, and shop; select two relevant clues on the board to connect them.
-5. In `RECONSTRUCT`, challenge the clock and blackout assumptions, then test the roof route and the final narrative.
-6. SAVE, return to menu, RESUME to reload. Language changes are immediate from the main menu; both locale resources are in `data/translations.json`.
+- **Left thumb:** analogue joystick; move and strafe into actual obstacles. Physics prevents walking through walls, closed doors, lamp posts, trees, furniture and the witness.
+- **Right thumb:** swipe open scenery to look around. No keyboard or mouse gameplay bindings.
+- **INSPECT / TALK:** collect one nearby clue or toggle a nearby door. Four room doors physically open/close and update collision.
+- **CAMERA:** cycle first-person → behind-the-shoulder → entrance surveillance camera → first-person. The surveillance view stays fixed and pauses player motion; switch back to walk.
+- **EVIDENCE BOARD:** touch cards to choose two clues; drag cards to arrange them; open RECONSTRUCT to test hypotheses.
+- **SAVE** saves evidence, board positions, case result and location. The language toggle in the menu immediately rebuilds the layout without changing the investigation.
 
-## Test (requires Godot)
+## Run and test
+
+Import `project.godot` into **Godot 4.7.2 Standard** and use F5 **in the editor for development only**. The product's gameplay bindings target Android touch.
 
 ```sh
 godot --headless --path . --editor --quit
 godot --headless --path . --script tests/core_tests.gd
+godot --headless --path . --script tests/mobile_tests.gd
 ```
 
-## Android export (requires Godot plus matching templates)
+CI (`.github/workflows/validate.yml`) validates translated evidence keys and chronology, executes logic, geometry, camera and Arabic-panel tests, checks headless startup, then exports a debug APK for arm64 and armeabi-v7a and uploads it under **Actions → successful workflow → Artifacts**. Do not confuse the ZIP artifact with a directly hosted APK.
 
-1. Editor → **Manage Export Templates**: install **4.7.2.stable** export templates.
-2. Install JDK 17 and the Android SDK packages required by the Godot **4.7** Android export docs; set the Java SDK and Android SDK paths in Editor Settings.
-3. Project → Export → Add **Android** preset; package `com.obieda.notsamestory`; orientation **landscape**. In this first single-player slice no INTERNET permission is necessary; **enable it when the real LAN transport is implemented**.
-4. Export debug APK and test on the Infinix X689, Android 11. Check GPU, input, Arabic shaping, save/load and memory usage. Do not assume 60 FPS without measured results.
+## Current artwork and performance scope
 
-If the included tentative `export_presets.cfg` is rejected by your exact editor build, recreate the preset from the editor instead of guessing names. No Android toolchain, Godot binary, export templates, or device were available in the authoring runtime; an APK could not be produced here.
+The user-provided detective-board screenshot is a **mood reference only**; its people/layout are not copied or included. Four original SVG headshots and four original SVG evidence illustrations are imported by Godot and shown in the mobile dialogue / board. Street architecture, four interior rooms, street furniture and NPCs are stylized original low-poly procedural meshes with collision, not final licensed high-quality character models. Missing: final GLB models/rigged animation, ambient audio, full vertically connected building, zoomable board, advanced NPC schedules, offline LAN, QR joining and reconnection.
 
-## Development limits
+The case remains authored and the canonical answer is packaged in this **single-player** APK. Do not ship multiplayer until secret host truth is separated from client resources. Frame rate, Arabic glyph coverage and aspect-ratio touch targets **still require physical testing on the target Infinix X689**, even with passing headless CI. The font uses the installed OS fallbacks; a properly licensed, packaged Arabic font is still a production task.
 
-This first slice represents the scenario through 7 labeled physical areas and 8 clues, with 3 useful graph connections and hypothesis evaluation; each clue now has its own proximity interaction and original temporary floor marker. Rooftop and interior spaces are laid out as a readable flattened low-poly diorama, not yet 3D-connected floors or complete apartment interiors. The evidence board has draggable cards and verified connecting lines; zoom/pan and rich typed relationships are still outstanding; NPCs do not yet run schedules. LAN, QR, role secrecy and reconnection are future milestones and should not be described as existing features.
-
-See `docs/CANONICAL_CASE.md`, `docs/ARCHITECTURE.md`, `docs/ART_DIRECTION.md`, and `docs/ASSET_MANIFEST.md`.
-
-## CI
-
-`.github/workflows/validate.yml` checks authored data, imports the project in **Godot 4.7.2**, executes Godot logic tests and a headless startup smoke test. Its dependent `android` job installs the matching official export templates and uploads a **debug-signed** Android APK as a workflow artifact if export succeeds. CI artifacts are not evidence of on-device frame rate or hotspot multiplayer. The first Android export must be verified in Actions before telling users an APK exists.
+See `docs/CANONICAL_CASE.md`, `docs/ARCHITECTURE.md`, `docs/ART_DIRECTION.md` and `docs/ASSET_MANIFEST.md`.
