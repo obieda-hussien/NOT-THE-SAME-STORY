@@ -1,11 +1,13 @@
-# Asset provenance and licensing
+# Asset provenance
 
-| Asset | Source | Creator | License | Status |
-|---|---|---|---|---|
-| Box mesh diorama / props | `scripts/world/game.gd` | This project | Original programmatic geometry | Implemented as temporary geometry |
-| System-provided UI font | Host OS fallback, not packaged | Platform/font creators | OS-managed; no font redistributed | Arabic shaping not device-tested |
-| Kenney assets | https://kenney.nl/ | Kenney | Check actual per-pack license; asset page catalog generally CC0 | Reviewed only; NOT imported |
-| Quaternius assets | https://quaternius.com/license.html | Quaternius | QAL v1.0 for current assets unless specific pack carries another license | Reviewed only; NOT imported |
-| Meshy / Higgsfield generations | User-connected service | Provider/creator terms depend on model | Verify individual job and account terms | Capabilities inspected; NO jobs submitted |
+| Asset | Source | Creator | License/status |
+|---|---|---|---|
+| Physical neighborhood / characters / obstacles | `scripts/world/neighborhood.gd` and `scripts/world/game.gd` | Original code for this project | Procedural original geometry; not final production art |
+| Four character portraits | `assets/portraits/*.svg` | Original project vectors | Project-authored, no third-party source; imported into game |
+| Four evidence illustrations | `assets/evidence/*.svg` | Original project vectors | Project-authored, no third-party source; imported into game |
+| Detective reference image | User-shared reference | Rights not established | **Not included or redistributed** |
+| Arabic/English system UI fonts | Android OS `SystemFont` fallback | OS vendors | No fonts redistributed; test Arabic shaping on target device |
+| Kenney/Quaternius | External catalogs | External authors | Not bundled; verify **per-pack** commercial license before import |
+| Higgsfield/Meshy GLB | Optional future generation | Per-model terms | No credits spent and no outputs claimed in this implementation |
 
-No paid or externally sourced pack is bundled with this delivery. Before adding any model: verify exact pack/version license, record URL, polygon count, textures, modifications, and usage; inspect in Godot on target device.
+Before importing an external asset: record URL, creator, license/version, modifications, GLB/texture/animation status, and target-device benchmarks.

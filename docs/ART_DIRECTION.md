@@ -1,13 +1,7 @@
-# Art direction: Egyptian detective diorama
+# Art direction — Not the Same Story
 
-The user supplied a reference image with a detective facing a dense, colorful evidence board, readable stylized headshots and string connections. This file documents the *broad* visual targets; the image is not copied into the repository, and its exact character or composition is not recreated.
+The supplied image depicts a detective confronting a lively connected board. Borrow the **broad** idea of readable stylized evidence cards, warm paper, purple strings and striking character silhouettes. Do not clone its characters, board composition or copyrighted artwork; the image is not shipped.
 
-## Visual language
-- Late-night Egyptian apartment block, compact architectural cutaways, rounded/chunky silhouettes, readable warm interiors against cool purple street lighting.
-- Board: cork-like warm neutral, paper cards grouped by evidence type, purple connecting threads and gold pinheads; all status must also have text/icons for accessibility.
-- Camera: fixed/semi-fixed orthographic isometric, landscape touch, low-poly 3D assets sourced or customized under verified commercial licenses.
-- Portraits: diverse original residents of this specific block. No characters or faces from the reference are replicated.
-- Avoid baked text; the bilingual UI must reflow in both languages. All reference art remains outside shipped and committed assets.
+Implemented: original flat graphic SVG headshots for Amina, Mariam, Fared and Nabil; original visual evidence cards; a more detailed Egyptian building/street diorama with doors, framed warm windows, street lamps, planters, trees, interiors and physical obstacles. The first-person camera puts the player *inside* this neighborhood; the optional shoulder camera shows an original blocky investigator, and a fixed overhead camera echoes CCTV uncertainty.
 
-## Current limitation
-Procedural boxes are deliberately temporary test geometry. The board has styled cards but no finished portraits or licensed GLB imports yet. Do not market it as final art.
+Current procedural world/characters are a stronger **functional art pass**, not the commercial-quality licensed low-poly 3D asset set or rigged animations requested for final release. Next visual production step: verify matching pack licenses and inspect imported GLB geometry, materials, rigging, triangle budgets, collisions, camera clipping and FPS on the target Android handset. Keep Arabic text in live UI, not textures.
