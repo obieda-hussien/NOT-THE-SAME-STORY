@@ -1,0 +1,30 @@
+; Not the Same Story — first independent Godot vertical slice.
+config_version=5
+
+[application]
+config/name="Not the Same Story | مش نفس القصة"
+run/main_scene="res://scenes/main.tscn"
+config/features=PackedStringArray("4.7", "GL Compatibility")
+
+[autoload]
+Loc="*res://scripts/core/loc.gd"
+Case="*res://scripts/core/case.gd"
+Saves="*res://scripts/core/saves.gd"
+
+[display]
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/size/window_width_override=1280
+window/size/window_height_override=720
+window/stretch/mode="canvas_items"
+window/handheld/orientation=0
+
+[rendering]
+textures/vram_compression/import_etc2_astc=true
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/default_filters/use_nearest_mipmap_filter=false
+environment/defaults/default_clear_color=Color(0.0549, 0.0706, 0.1137, 1)
+
+[physics]
+3d/default_gravity=9.8
